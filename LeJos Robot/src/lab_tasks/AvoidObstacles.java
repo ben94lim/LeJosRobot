@@ -15,6 +15,16 @@ import lejos.robotics.RangeFinderAdapter;
 import lejos.robotics.RegulatedMotor;
 import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.DifferentialPilot;
+import lejos.utility.Delay;
+
+/**
+ * <p>
+ * A program that uses an ultrasonic sensor to avoid obstacles
+ * </p>
+ *
+ * @author Benjamin Lim
+ *
+ */
 
 public class AvoidObstacles implements RoboFace {
 	
@@ -67,17 +77,21 @@ public class AvoidObstacles implements RoboFace {
     	sonar = new RangeFinderAdapter(sonicSensor);
     }
     
-    void go() throws IOException {
-    	    	
+    void go() throws IOException {    	
+    	
+    	leftMotor.stop();
+    	rightMotor.stop();
+    	
+    	leftMotor.rotate(180);
+    	rightMotor.rotate(-180);
+    	
     	leftMotor.forward();
     	rightMotor.forward();
     	
-    	while (sonar.getRange() > 0.2) {
-    		Thread.yield();    		
-    	}
+    	Delay.msDelay(1000);
     	
-    	leftMotor.stop();
-    	rightMotor.stop();   	
+    	leftMotor.rotate(-180);
+    	rightMotor.rotate(180);
     }
 
 	@Override
@@ -87,7 +101,10 @@ public class AvoidObstacles implements RoboFace {
 
 	@Override
 	public boolean takeControl() {
-		return true;
+		if(sonar.getRange() < 0.2)
+			return true;
+		else 
+			return false;
 	}
 
 	@Override
