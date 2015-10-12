@@ -5,7 +5,6 @@ import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.LCD;
 import lejos.robotics.RegulatedMotor;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
-import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.DifferentialPilot;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.hardware.video.Video;
@@ -15,7 +14,6 @@ import java.io.IOException;
 import lejos.hardware.Button;
 import lejos.hardware.Key;
 import lejos.hardware.KeyListener;
-import lejos.utility.Delay;
 
 
 /**
@@ -54,24 +52,6 @@ public class FollowMotion {
     private static int threshold = 70;
     private static MotionMap aMotMap = new MotionMap();
 
-
-    /**
-     * <p>
-     * Main entry method.  Initializes program and starts the robot running.
-     * </p>
-     * @throws IOException 
-     *
-     */
-    public static void main(String[] args) throws IOException {
-    	FollowMotion robot = new FollowMotion(
-    			LocalEV3.get(), // brick
-    			"B",            // left motor port
-    			"C"            // right motor port
-    			);
-        
-    	robot.go(); // start it running
-    }
-
     //Constructor
     public FollowMotion(EV3 pBrick, String lPort, String rPort) {
 
@@ -104,7 +84,7 @@ public class FollowMotion {
 
     }
 
-    private void go() throws IOException {
+    void go() throws IOException {
     	
     	// Displays introduction
     	intro();
@@ -115,7 +95,7 @@ public class FollowMotion {
     }
 
     private void intro() {
-    	// clear the screen
+    	// Clear the screen
     	brick.getTextLCD().clear();
 
     	brick.getTextLCD().drawString("Calibrate:", 0, 0);
@@ -129,8 +109,6 @@ public class FollowMotion {
     }
     
     private void chase() throws IOException {
-    	// You will need to complete this method in order to have the
-    	// robot search for the line once it loses it
         	
     	webcam.open(WIDTH, HEIGHT);
     	byte[] frame = webcam.createFrame();
@@ -138,46 +116,51 @@ public class FollowMotion {
     	while(Button.ESCAPE.isUp()) {
     		webcam.grabFrame(frame);
     		// y1: pos 0; u: pos 1; y2: pos 2; v: pos 3.
+    		
     		// Create a frame of luminance values
     		extractLuminanceValues(frame);
+    		
     		// Motion processing
     		aMotMap.addFrame(luminanceFrame);
     		aMotMap.compMotion();
     		aMotMap.compLeftRight();
     		
-    		//If motion is detected move forward
+    		int baseSpeed = 200;
+    		
+    		// If motion is detected move forward
     		if(aMotMap.isMotion()){
-    			pilot.forward();
-    			pilot.setTravelSpeed(60);
+    			leftMotor.forward();    			
+				leftMotor.setSpeed(baseSpeed);
+				rightMotor.forward();
+				rightMotor.setSpeed(baseSpeed);
     		} 
     		
     		else {
-    			pilot.stop();   			
+    			leftMotor.stop();
+    			rightMotor.stop();
     		}
     		
-    		//If left motion is higher than right motion then turn left
-    		if(aMotMap.leftMotion > aMotMap.rightMotion)
+    		// If left motion is higher than right motion then turn left
+    		if(aMotMap.leftMotion > aMotMap.rightMotion && aMotMap.leftMotion > 20)
     		{
-    			pilot.steer(25, 20);
-    			/*rightMotor.setSpeed(baseSpeed+20);
-    			leftMotor.setSpeed(baseSpeed);*/
+    			rightMotor.setSpeed(baseSpeed+50);
+    			leftMotor.setSpeed(baseSpeed);
     		}
     		
-    		//If right motion is higher than left motion then turn right
-    		else if(aMotMap.rightMotion > aMotMap.leftMotion)
+    		// If right motion is higher than left motion then turn right
+    		else if(aMotMap.rightMotion > aMotMap.leftMotion && aMotMap.rightMotion > 20)
     		{
-    			pilot.steer(25, 20);
-    			/*leftMotor.setSpeed(baseSpeed+20);
-    			rightMotor.setSpeed(baseSpeed);*/
+    			leftMotor.setSpeed(baseSpeed+50);
+    			rightMotor.setSpeed(baseSpeed);
     		}
     		
-    		//System.out.println("Max motion: " + aMotMap.compMaxMotion());
+    		// System.out.println("Max motion: " + aMotMap.compMaxMotion());
     		
-    		//Display left and right motion values
+    		// Display left and right motion values and motor speed
     		System.out.printf("L:%d R:%d LM:%d RM:%d %n",(int)aMotMap.leftMotion, (int)aMotMap.rightMotion, (int)leftMotor.getSpeed(), (int)rightMotor.getSpeed());
                 
     		// Display the frame or motion
-    		dispFrame();
+    		//dispFrame();
     		//dispMotion();
                 
     		// Adjust threshold?
@@ -192,6 +175,8 @@ public class FollowMotion {
     				threshold = 0;
     		}
     	}
+    	
+    	// Close motor ports and webcam port
     	webcam.close();
     	leftMotor.close();
     	rightMotor.close(); 	
@@ -207,7 +192,8 @@ public class FollowMotion {
     		luminanceFrame[y][x] = frame[i] & 0xFF;   		
     	}
     }
-        
+    
+    // Display on the LCD the input from the webcam
     public static void dispFrame() {
     	for (int y=0; y<HEIGHT; y++) {
     		for (int x=0; x<WIDTH; x++) {
