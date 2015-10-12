@@ -46,6 +46,12 @@ public class AvoidObstacles implements RoboFace {
     /** RangeFinder for Sonic Sensor*/
     private RangeFinderAdapter sonar;
     
+    /** Flag for suppress action */
+    private boolean suppress = false;
+    
+    /** State of this behaviour's action */
+    private boolean active = false;
+    
     //Constructor
     public AvoidObstacles(EV3 pBrick, String lPort, String rPort, String sonicPort) {
 
@@ -73,11 +79,18 @@ public class AvoidObstacles implements RoboFace {
     	//Connect Ultrasonic Sensor
     	sonicSensor = new EV3UltrasonicSensor(brick.getPort(sonicPort));
     	
-    	// Set Ultrasonicsonic Sensor to Distance Mode
+    	// Set Ultrasonic Sensor to Distance Mode
     	sonar = new RangeFinderAdapter(sonicSensor);
     }
     
-    void go() throws IOException {    	
+    void move()
+    {
+    	leftMotor.forward();
+    	rightMotor.forward();
+    }
+    
+    void avoid() throws IOException
+    {    	
     	
     	leftMotor.stop();
     	rightMotor.stop();
@@ -96,7 +109,14 @@ public class AvoidObstacles implements RoboFace {
 
 	@Override
 	public void action() throws IOException {
-		go();		
+		active = true;
+		
+		if(sonar.getRange() > 20)
+			move();
+		
+		avoid();
+		
+		active = false;
 	}
 
 	@Override
@@ -106,11 +126,16 @@ public class AvoidObstacles implements RoboFace {
 		else 
 			return false;
 	}
+	
+	@Override
+	public void suppress() {
+		suppress = true;		
+	}
 
 	@Override
-	public void suppressed() {
-		
-	}
+	public boolean isActive() {
+		return active;		
+	}	
 }
 
 

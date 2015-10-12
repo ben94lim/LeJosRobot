@@ -11,5 +11,8 @@ public interface RoboFace {
 	public boolean takeControl();
 	
 	// Method to safely suppress currently running action from behaviour
-	public void suppressed();
+	public void suppress();
+	
+	// Method to check if method is currently active
+	public boolean isActive();
 }

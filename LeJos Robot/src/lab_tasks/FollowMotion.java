@@ -24,7 +24,7 @@ import lejos.hardware.KeyListener;
  * @author Benjamin Lim
  *
  */
-public class FollowMotion {
+public class FollowMotion implements RoboFace{
 	
 
     /** The EV3 brick we're controlling */
@@ -35,11 +35,6 @@ public class FollowMotion {
 
     /** The motor on the right side of the robot */
     private RegulatedMotor rightMotor;
-    /** Pilot for the robot */
-    private DifferentialPilot pilot;
-
-    /** The raw EV3 Colour Sensor object */
-    private EV3ColorSensor colorSensor;
     
     /** Video input from the webcam */
     private static Video webcam;
@@ -51,9 +46,18 @@ public class FollowMotion {
     private static int [][] luminanceFrame = new int[HEIGHT][WIDTH];
     private static int threshold = 70;
     private static MotionMap aMotMap = new MotionMap();
+    
+    /** AvoidObstacles Interface */
+    RoboFace avoid;
+    
+    /** Flag for suppress action */
+    private boolean suppress = false;
+    
+    /** State of this behaviour's action */
+    private boolean active = false;
 
     //Constructor
-    public FollowMotion(EV3 pBrick, String lPort, String rPort) {
+    public FollowMotion(EV3 pBrick, String lPort, String rPort, RoboFace avoidBehaviour) {
 
     	super();
 
@@ -79,21 +83,9 @@ public class FollowMotion {
     	// Connect to webcam
     	webcam = brick.getVideo();
     	
-    	// Set pilot
-    	pilot = new DifferentialPilot(56, 118, leftMotor, rightMotor);
-
+    	avoid = avoidBehaviour;
     }
-
-    void go() throws IOException {
-    	
-    	// Displays introduction
-    	intro();
-    	
-    	while (true) {
-    		chase();
-    	}
-    }
-
+    
     private void intro() {
     	// Clear the screen
     	brick.getTextLCD().clear();
@@ -106,6 +98,24 @@ public class FollowMotion {
     	brick.getTextLCD().drawString("Enter key", 0, 6);
 
     	brick.getKey("Enter").waitForPressAndRelease();
+    }
+    
+    void go() throws IOException {
+    	
+    	// Displays introduction
+    	intro();
+    	
+    	// While not suppressed, chase movement
+    	while (!suppress) {
+    		chase();
+    	}  	
+    	
+    	// Close motor ports and webcam port
+    	webcam.close();
+    	leftMotor.stop();
+    	rightMotor.stop();
+    	leftMotor.close();
+    	rightMotor.close();
     }
     
     private void chase() throws IOException {
@@ -135,6 +145,7 @@ public class FollowMotion {
 				rightMotor.setSpeed(baseSpeed);
     		} 
     		
+    		// Else Stop
     		else {
     			leftMotor.stop();
     			rightMotor.stop();
@@ -176,10 +187,7 @@ public class FollowMotion {
     		}
     	}
     	
-    	// Close motor ports and webcam port
-    	webcam.close();
-    	leftMotor.close();
-    	rightMotor.close(); 	
+    	
     }        
         
     public static void extractLuminanceValues(byte [] frame) {
@@ -207,4 +215,35 @@ public class FollowMotion {
     	}
         	
     }
+
+	@Override
+	public void action() throws IOException {
+		// Set suppressed state to false before performing action
+		active = true;
+		
+		go();
+		
+		// Return suppressed state to true
+		active = false;		
+	}
+
+	@Override
+	public boolean takeControl() {
+		if(avoid.takeControl())
+			return false;
+		
+		else	
+			return true;
+	}
+	
+	@Override
+	public void suppress() {
+		suppress = true;
+		
+	}
+
+	@Override
+	public boolean isActive() {
+		return active;	
+	}
 }

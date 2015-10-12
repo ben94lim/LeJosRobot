@@ -9,6 +9,7 @@ public class Controller {
 	
     /** Constructor*/
 	public Controller(RoboFace[] behaviourList) {
+		
 		// Initialise behaviour list
 		behaviours = behaviourList;
 	}
@@ -34,14 +35,20 @@ public class Controller {
 			if(priorityAction > currentAction)
 			{
 				behaviours[currentAction].suppress();
-				while(!behaviours[currentAction].isSuppressed())
+				
+				while(behaviours[currentAction].isActive())
 				{
 					 
 				}
 				 
 				currentAction = priorityAction;
 			}
-			 
+			
+			while(behaviours[currentAction].isActive())
+			{
+				 
+			}
+			
 			behaviours[currentAction].action();
 			
 			Thread.yield();
@@ -54,15 +61,13 @@ public class Controller {
 	    {
 			while (true)
 			{
-				//FIND HIGHEST PRIORITY BEHAVIOR THAT WANTS CONTROL
+				//Find he  highest level behaviour that wants to take control
 				synchronized (this)
 				{
 					for (int i = 0; i < behaviours.length; i++)
 					{
 						if (behaviours[i].takeControl())
-						{
 							topPriority = i;
-						}
 					}
 				}// End of synchronise block - main thread can run now
 				Thread.yield();
