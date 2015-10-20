@@ -6,15 +6,9 @@ import java.io.IOException;
 import lejos.hardware.Key;
 import lejos.hardware.KeyListener;
 import lejos.hardware.ev3.EV3;
-import lejos.hardware.ev3.LocalEV3;
-import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
-import lejos.hardware.sensor.SensorModes;
-import lejos.robotics.RangeFinder;
 import lejos.robotics.RangeFinderAdapter;
 import lejos.robotics.RegulatedMotor;
-import lejos.robotics.SampleProvider;
-import lejos.robotics.navigation.DifferentialPilot;
 import lejos.utility.Delay;
 
 /**
@@ -37,9 +31,6 @@ public class AvoidObstacles implements RoboFace {
     /** The motor on the right side of the robot */
     private RegulatedMotor rightMotor;
     
-    /** Pilot for the robot */
-    private DifferentialPilot pilot;
-    
     /** Ultrasonic Sensor*/
     private EV3UltrasonicSensor sonicSensor;
     
@@ -53,15 +44,15 @@ public class AvoidObstacles implements RoboFace {
     private boolean active = false;
     
     //Constructor
-    public AvoidObstacles(EV3 pBrick, String lPort, String rPort, String sonicPort) {
+    public AvoidObstacles(String sonicPort) throws IOException {
 
     	super();
 
     	// permanently store the brick in our instance variable
-    	brick = pBrick;
+    	//brick = pBrick;
                 
     	// Establish a fail-safe: pressing Escape quits
-    	brick.getKey("Escape").addKeyListener(new KeyListener() {
+    	Robot.brick.getKey("Escape").addKeyListener(new KeyListener() {
     		@Override
     		public void keyPressed(Key k) {
     		}
@@ -73,11 +64,11 @@ public class AvoidObstacles implements RoboFace {
     	});
 
     	// Connect the motors
-    	leftMotor = new EV3LargeRegulatedMotor(brick.getPort(lPort));
-    	rightMotor = new EV3LargeRegulatedMotor(brick.getPort(rPort));
+    	//leftMotor = lPort;
+    	//rightMotor = rPort;
     	
     	//Connect Ultrasonic Sensor
-    	sonicSensor = new EV3UltrasonicSensor(brick.getPort(sonicPort));
+    	sonicSensor = new EV3UltrasonicSensor(Robot.brick.getPort(sonicPort));
     	
     	// Set Ultrasonic Sensor to Distance Mode
     	sonar = new RangeFinderAdapter(sonicSensor);
@@ -85,33 +76,33 @@ public class AvoidObstacles implements RoboFace {
     
     void move()
     {
-    	leftMotor.forward();
-    	rightMotor.forward();
+    	Robot.leftMotor.forward();
+    	Robot.rightMotor.forward();
     }
     
     void avoid() throws IOException
     {    	
     	
-    	leftMotor.stop();
-    	rightMotor.stop();
+    	Robot.leftMotor.stop();
+    	Robot.rightMotor.stop();
     	
-    	leftMotor.rotate(180);
-    	rightMotor.rotate(-180);
+    	Robot.leftMotor.rotate(180);
+    	Robot.rightMotor.rotate(-180);
     	
-    	leftMotor.forward();
-    	rightMotor.forward();
+    	Robot.leftMotor.forward();
+    	Robot.rightMotor.forward();
     	
     	Delay.msDelay(1000);
     	
-    	leftMotor.rotate(-180);
-    	rightMotor.rotate(180);
+    	Robot.leftMotor.rotate(-180);
+    	Robot.rightMotor.rotate(180);
     }
 
 	@Override
 	public void action() throws IOException {
 		active = true;
 		
-		if(sonar.getRange() > 20)
+		if(sonar.getRange() > 0.2)
 			move();
 		
 		avoid();

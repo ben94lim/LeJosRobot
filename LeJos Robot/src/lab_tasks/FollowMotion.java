@@ -1,12 +1,10 @@
 package lab_tasks;
 
 import lejos.hardware.ev3.EV3;
-import lejos.hardware.ev3.LocalEV3;
 import lejos.hardware.lcd.LCD;
-import lejos.robotics.RegulatedMotor;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
-import lejos.robotics.navigation.DifferentialPilot;
-import lejos.hardware.sensor.EV3ColorSensor;
+import lejos.robotics.RegulatedMotor;
+import lejos.utility.Delay;
 import lejos.hardware.video.Video;
 
 import java.io.IOException;
@@ -28,7 +26,7 @@ public class FollowMotion implements RoboFace{
 	
 
     /** The EV3 brick we're controlling */
-    private EV3 brick;
+    private static EV3 brick;
 
     /** The motor on the left side of the robot */
     private RegulatedMotor leftMotor;
@@ -57,15 +55,15 @@ public class FollowMotion implements RoboFace{
     private boolean active = false;
 
     //Constructor
-    public FollowMotion(EV3 pBrick, String lPort, String rPort, RoboFace avoidBehaviour) {
+    public FollowMotion(RoboFace avoidBehaviour) {
 
     	super();
 
     	// permanently store the brick in our instance variable
-    	brick = pBrick;
+    	//brick = pBrick;
                 
     	// Establish a fail-safe: pressing Escape quits
-    	brick.getKey("Escape").addKeyListener(new KeyListener() {
+    	Robot.brick.getKey("Escape").addKeyListener(new KeyListener() {
     		@Override
     		public void keyPressed(Key k) {
     		}
@@ -73,15 +71,18 @@ public class FollowMotion implements RoboFace{
     		@Override
     		public void keyReleased(Key k) {
     			System.exit(0);
-    		}
+    		}  		
     	});
 
     	// Connect the motors
-    	leftMotor = new EV3LargeRegulatedMotor(brick.getPort(lPort));
-    	rightMotor = new EV3LargeRegulatedMotor(brick.getPort(rPort));
+    	/** The motor on the left side of the robot */
+    	//leftMotor = lPort;
+
+	    /** The motor on the right side of the robot */
+	    //rightMotor = rPort;
     	
     	// Connect to webcam
-    	webcam = brick.getVideo();
+    	webcam = Robot.brick.getVideo();
     	
     	avoid = avoidBehaviour;
     }
@@ -103,19 +104,16 @@ public class FollowMotion implements RoboFace{
     void go() throws IOException {
     	
     	// Displays introduction
-    	intro();
+    	//intro();
     	
     	// While not suppressed, chase movement
-    	while (!suppress) {
-    		chase();
-    	}  	
+
+    	chase();
     	
     	// Close motor ports and webcam port
-    	webcam.close();
-    	leftMotor.stop();
-    	rightMotor.stop();
-    	leftMotor.close();
-    	rightMotor.close();
+    	//webcam.close();
+    	Robot.leftMotor.stop();
+    	Robot.rightMotor.stop();
     }
     
     private void chase() throws IOException {
@@ -123,9 +121,8 @@ public class FollowMotion implements RoboFace{
     	webcam.open(WIDTH, HEIGHT);
     	byte[] frame = webcam.createFrame();
              
-    	while(Button.ESCAPE.isUp()) {
+    	//while(!suppress) {
     		webcam.grabFrame(frame);
-    		// y1: pos 0; u: pos 1; y2: pos 2; v: pos 3.
     		
     		// Create a frame of luminance values
     		extractLuminanceValues(frame);
@@ -135,40 +132,47 @@ public class FollowMotion implements RoboFace{
     		aMotMap.compMotion();
     		aMotMap.compLeftRight();
     		
-    		int baseSpeed = 200;
+    		if(suppress)
+    			return;
     		
+    		int baseSpeed = 200;
     		// If motion is detected move forward
     		if(aMotMap.isMotion()){
-    			leftMotor.forward();    			
-				leftMotor.setSpeed(baseSpeed);
-				rightMotor.forward();
-				rightMotor.setSpeed(baseSpeed);
+    			Robot.leftMotor.forward();    			
+    			Robot.leftMotor.setSpeed(baseSpeed);
+    			Robot.rightMotor.forward();
+    			Robot.rightMotor.setSpeed(baseSpeed);
     		} 
     		
     		// Else Stop
     		else {
-    			leftMotor.stop();
-    			rightMotor.stop();
+    			Robot.leftMotor.stop();
+    			Robot.rightMotor.stop();
     		}
     		
+    		if(suppress)
+    			return;
+    		
     		// If left motion is higher than right motion then turn left
-    		if(aMotMap.leftMotion > aMotMap.rightMotion && aMotMap.leftMotion > 20)
+    		if(aMotMap.leftMotion > aMotMap.rightMotion && (aMotMap.leftMotion - aMotMap.rightMotion) > 20)
     		{
-    			rightMotor.setSpeed(baseSpeed+50);
-    			leftMotor.setSpeed(baseSpeed);
+    			Robot.rightMotor.setSpeed(baseSpeed+50);
+    			Robot.leftMotor.setSpeed(baseSpeed);
+    			Delay.msDelay(1000);
     		}
     		
     		// If right motion is higher than left motion then turn right
-    		else if(aMotMap.rightMotion > aMotMap.leftMotion && aMotMap.rightMotion > 20)
+    		else if(aMotMap.rightMotion > aMotMap.leftMotion && (aMotMap.rightMotion - aMotMap.leftMotion) > 20)
     		{
-    			leftMotor.setSpeed(baseSpeed+50);
-    			rightMotor.setSpeed(baseSpeed);
+    			Robot.leftMotor.setSpeed(baseSpeed+50);
+    			Robot.rightMotor.setSpeed(baseSpeed);
+    			Delay.msDelay(1000);
     		}
     		
     		// System.out.println("Max motion: " + aMotMap.compMaxMotion());
     		
     		// Display left and right motion values and motor speed
-    		System.out.printf("L:%d R:%d LM:%d RM:%d %n",(int)aMotMap.leftMotion, (int)aMotMap.rightMotion, (int)leftMotor.getSpeed(), (int)rightMotor.getSpeed());
+    		System.out.printf("L:%d R:%d LM:%d RM:%d %n",(int)aMotMap.leftMotion, (int)aMotMap.rightMotion, (int)Robot.leftMotor.getSpeed(), (int)Robot.rightMotor.getSpeed());
                 
     		// Display the frame or motion
     		//dispFrame();
@@ -185,7 +189,7 @@ public class FollowMotion implements RoboFace{
     			if (threshold < 0)
     				threshold = 0;
     		}
-    	}
+    	//}
     	
     	
     }        
