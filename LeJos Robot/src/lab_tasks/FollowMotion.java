@@ -34,8 +34,7 @@ public class FollowMotion implements RoboFace{
     /** The motor on the right side of the robot */
     private RegulatedMotor rightMotor;
     
-    /** Video input from the webcam */
-    private static Video webcam;
+    
     
     /** Width and height of frame*/
     private static final int WIDTH = 160;
@@ -81,8 +80,7 @@ public class FollowMotion implements RoboFace{
 	    /** The motor on the right side of the robot */
 	    //rightMotor = rPort;
     	
-    	// Connect to webcam
-    	webcam = Robot.brick.getVideo();
+    	
     	
     	avoid = avoidBehaviour;
     }
@@ -112,17 +110,17 @@ public class FollowMotion implements RoboFace{
     	
     	// Close motor ports and webcam port
     	//webcam.close();
-    	Robot.leftMotor.stop();
-    	Robot.rightMotor.stop();
+    	//Robot.leftMotor.stop();
+    	//Robot.rightMotor.stop();
     }
     
     private void chase() throws IOException {
         	
-    	webcam.open(WIDTH, HEIGHT);
-    	byte[] frame = webcam.createFrame();
+    	
+    	byte[] frame = Robot.webcam.createFrame();
              
     	//while(!suppress) {
-    		webcam.grabFrame(frame);
+    		Robot.webcam.grabFrame(frame);
     		
     		// Create a frame of luminance values
     		extractLuminanceValues(frame);
@@ -135,7 +133,7 @@ public class FollowMotion implements RoboFace{
     		if(suppress)
     			return;
     		
-    		int baseSpeed = 200;
+    		int baseSpeed = 150;
     		// If motion is detected move forward
     		if(aMotMap.isMotion()){
     			Robot.leftMotor.forward();    			
@@ -154,19 +152,19 @@ public class FollowMotion implements RoboFace{
     			return;
     		
     		// If left motion is higher than right motion then turn left
-    		if(aMotMap.leftMotion > aMotMap.rightMotion && (aMotMap.leftMotion - aMotMap.rightMotion) > 20)
+    		if(aMotMap.leftMotion > aMotMap.rightMotion && (aMotMap.leftMotion - aMotMap.rightMotion) > 4)
     		{
     			Robot.rightMotor.setSpeed(baseSpeed+50);
     			Robot.leftMotor.setSpeed(baseSpeed);
-    			Delay.msDelay(1000);
+    			//Delay.msDelay(2000);
     		}
     		
     		// If right motion is higher than left motion then turn right
-    		else if(aMotMap.rightMotion > aMotMap.leftMotion && (aMotMap.rightMotion - aMotMap.leftMotion) > 20)
+    		else if(aMotMap.rightMotion > aMotMap.leftMotion && (aMotMap.rightMotion - aMotMap.leftMotion) > 4)
     		{
     			Robot.leftMotor.setSpeed(baseSpeed+50);
     			Robot.rightMotor.setSpeed(baseSpeed);
-    			Delay.msDelay(1000);
+    			//Delay.msDelay(2000);
     		}
     		
     		// System.out.println("Max motion: " + aMotMap.compMaxMotion());
