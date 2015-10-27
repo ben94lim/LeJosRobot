@@ -7,8 +7,10 @@ import lejos.hardware.Key;
 import lejos.hardware.KeyListener;
 import lejos.hardware.ev3.EV3;
 import lejos.hardware.sensor.EV3UltrasonicSensor;
+import lejos.hardware.sensor.SensorModes;
 import lejos.robotics.RangeFinderAdapter;
 import lejos.robotics.RegulatedMotor;
+import lejos.robotics.SampleProvider;
 import lejos.utility.Delay;
 
 /**
@@ -32,7 +34,7 @@ public class AvoidObstacles implements RoboFace {
     private RegulatedMotor rightMotor;
     
     /** Ultrasonic Sensor*/
-    private EV3UltrasonicSensor sonicSensor;
+    private SampleProvider distance = Robot.sonicSensor.getDistanceMode();
     
     /** RangeFinder for Sonic Sensor*/
     private RangeFinderAdapter sonar;
@@ -44,7 +46,7 @@ public class AvoidObstacles implements RoboFace {
     private boolean active = false;
     
     //Constructor
-    public AvoidObstacles(String sonicPort) throws IOException {
+    public AvoidObstacles() throws IOException {
 
     	super();
 
@@ -68,11 +70,21 @@ public class AvoidObstacles implements RoboFace {
     	//rightMotor = rPort;
     	
     	//Connect Ultrasonic Sensor
-    	sonicSensor = new EV3UltrasonicSensor(Robot.brick.getPort(sonicPort));
+    	
     	
     	// Set Ultrasonic Sensor to Distance Mode
-    	sonar = new RangeFinderAdapter(sonicSensor);
+    	//sonar = new RangeFinderAdapter(sonicSensor);   	
+
+
+    	 	
     }
+    
+    // get an instance of this sensor in measurement mode
+	//SampleProvider distance = sonicSensor.getMode("Distance");   
+    
+	// initialize an array of floats for fetching samples. 
+	// Ask the SampleProvider how long the array should be
+	float[] sample = new float[distance.sampleSize()];
     
     void move()
     {
@@ -82,7 +94,7 @@ public class AvoidObstacles implements RoboFace {
     
     void avoid() throws IOException
     {    	
-    	
+    	System.out.printf("Object detected");
     	Robot.leftMotor.stop();
     	Robot.rightMotor.stop();
     	
@@ -102,18 +114,21 @@ public class AvoidObstacles implements RoboFace {
 	public void action() throws IOException {
 		active = true;
 		
-		if(sonar.getRange() > 0.2)
+		/*distance.fetchSample(sample, 0);
+		if(sample[0] > 0.2)
 			move();
-		
-		avoid();
+		else
+			avoid();*/
 		
 		active = false;
 	}
 
 	@Override
 	public boolean takeControl() {
-		if(sonar.getRange() < 0.2)
-			return true;
+		distance.fetchSample(sample, 0);
+		//System.out.printf("Distance: %d\n", (int)sample[0]);
+		if(sample[0] < 0.2)
+			return false;
 		else 
 			return false;
 	}
