@@ -50,7 +50,7 @@ public class RobotMain {
 		Robot robot = new Robot();
 		
 		// Initialise AvoidObstacles Class
-		RoboFace avoid = new AvoidObstacles("S4");
+		RoboFace avoid = new AvoidObstacles();
 		
 		// Initialise FollowMotion Class
 		RoboFace followMotion = new FollowMotion(avoid);
