@@ -2,7 +2,18 @@ package lab_tasks;
 
 public class LineLightFeatures {
 
-	public double meanLeft, meanRight, meanTot, meanMidLeft, meanMidRight, meanTopLeft, meanTopRight, meanBtmLeft, meanBtmRight;
+	public double	meanLeft,
+					meanRight,
+					meanTot,
+					meanMidLeft,
+					meanMidRight,
+					meanTopLeft,
+					meanTopRight,
+					meanBtmLeft,
+					meanBtmRight,
+					mean3Left,
+					mean3Mid,
+					mean3Right;
 
 	public LineLightFeatures() {
 		init_all();
@@ -58,6 +69,37 @@ public class LineLightFeatures {
 		meanMidRight = meanMidRight/countR;
 	}
 
+	public void compThree(byte [][] luminanceFrame, int height, int width) {
+		mean3Left = 0;
+		mean3Mid = 0;
+		mean3Right = 0;
+		
+		int countL = 0;
+		int countM = 0;
+		int countR = 0;
+		
+		for (int y=0; y<height; y++) {
+			for (int x=0; x<(width/3); x++) {
+				mean3Left += (double) (luminanceFrame[y][x] & 0xFF);
+				countL++;
+			}
+
+			for (int x=(width/3)+1; x<((width/3)*2); x++) {
+				mean3Mid += (double) (luminanceFrame[y][x] & 0xFF);
+				countM++;
+			}
+			
+			for (int x=((width/3)*2)+1; x<width; x++) {
+				mean3Right += (double) (luminanceFrame[y][x] & 0xFF);
+				countR++;
+			}			
+			
+			mean3Left = mean3Left/countL;
+			mean3Mid = mean3Mid/countM;
+			mean3Right = mean3Right/countR;
+		}		
+	}
+	
 	public void compQuarter(byte [][] luminanceFrame, int height, int width) {
 		meanTopLeft= 0;
 		meanTopRight=0;
