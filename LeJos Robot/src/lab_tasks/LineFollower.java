@@ -146,16 +146,16 @@ public class LineFollower {
 		while(Button.ESCAPE.isUp()) {
 
 			// Check for target
+			checkTarget();
 			
 			// Check for Junction
-			checkJunction(video, frame);
-
-			
+			checkJunction(video, frame);			
 
 			// Display
 			//System.out.println("Mean right: " + aLightFeat.meanRight);
 			//System.out.println("Mean left: " + aLightFeat.meanLeft);
 			//dispFrame();
+			
 			computeLeftRight(video, frame);
 			right_field = ((aLightFeat.meanRight)/255)*180;
 			left_field = ((aLightFeat.meanLeft)/255)*180;
@@ -224,8 +224,9 @@ public class LineFollower {
 		leftMotor.close();
 		rightMotor.close();		
 	} 
-	static boolean detectEdge()
+	static boolean detectEdge(Video video, byte[] frame) throws IOException
 	{
+		computeQuarter(video, frame);
 		if((aLightFeat.meanTopLeft + aLightFeat.meanTopRight) > 100)
 		{
 			rightMotor.stop();
@@ -236,6 +237,7 @@ public class LineFollower {
 		return false;
 		
 	}
+	
 	static boolean checkTarget()
 	{		
 		lightSampleProv.fetchSample(lightSample, 0);
@@ -248,7 +250,7 @@ public class LineFollower {
 	
 	static void checkJunction(Video video, byte[] frame) throws IOException
 	{
-		computeQuarter(video, frame);
+		computeLeftRight(video, frame);
 
 		double left = (aLightFeat.mean3Left/255)*180;
 		double mid = (aLightFeat.mean3Mid/255)*180;
