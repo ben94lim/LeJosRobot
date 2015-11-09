@@ -1,6 +1,12 @@
 package lab_tasks;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import lejos.hardware.BrickFinder;
 import lejos.hardware.Button;
 import lejos.hardware.Key;
@@ -11,11 +17,16 @@ import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.port.MotorPort;
 import lejos.hardware.port.SensorPort;
 import lejos.hardware.sensor.EV3ColorSensor;
+import lejos.hardware.sensor.EV3GyroSensor;
 import lejos.hardware.video.Video;
+import lejos.robotics.GyroscopeAdapter;
 import lejos.robotics.RegulatedMotor;
 import lejos.robotics.SampleProvider;
+import lejos.robotics.localization.CompassPoseProvider;
 import lejos.robotics.navigation.DifferentialPilot;
+import lejos.robotics.navigation.Navigator;
 import lejos.utility.Delay;
+import lejos.utility.GyroDirectionFinder;
 
 /**
  * <p>
@@ -42,21 +53,42 @@ public class LineFollower {
 	private static RegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.B);
 
 	private static RegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.C);
+	
+	//Differential Pilot
+	private static DifferentialPilot pilot = new DifferentialPilot(56,120,leftMotor,rightMotor);
+	
+	//Gyro Sensor
+	private static EV3GyroSensor gyroSensor = new EV3GyroSensor(SensorPort.S4);
+	
+	private static SampleProvider gyroSampleProv = gyroSensor.getAngleAndRateMode();
+	
+	//Gyro Adapter and Direction Finder
+	
+	private static GyroscopeAdapter gyroAdapter = new GyroscopeAdapter(gyroSampleProv, 2);
+	
+	private static GyroDirectionFinder gyroDirectFinder = new GyroDirectionFinder(gyroAdapter);
+	
+	//Compass Pose Provider
+	private static CompassPoseProvider compassPoseProv = new CompassPoseProvider(pilot, gyroDirectFinder);
+	
+	//Navigator
+	private static Navigator navigator = new Navigator(pilot, compassPoseProv);
 
+	// Colour Sensor
+	private static EV3ColorSensor lightSensor = new EV3ColorSensor(SensorPort.S3);
+
+	private static SampleProvider lightSampleProv = lightSensor.getAmbientMode();
+	
 	// Light features
 	private static LineLightFeatures aLightFeat = new LineLightFeatures();
 
-	private static EV3ColorSensor lightSensor = new EV3ColorSensor(SensorPort.S3);
-
-	private static SampleProvider getLight = lightSensor.getAmbientMode();
-
-	private static float[] lightSample = new float[getLight.sampleSize()];
+	private static float[] lightSample = new float[lightSampleProv.sampleSize()];
 
 
 	public LineFollower() {
 
 		// permanently store the brick in our instance variable
-		brick = (EV3) BrickFinder.getLocal();;
+		brick = (EV3) BrickFinder.getLocal();
 
 		/*// Establish a fail-safe: pressing Escape quits
     	brick.getKey("Escape").addKeyListener(new KeyListener() {
@@ -90,111 +122,104 @@ public class LineFollower {
 		double left_field = 0;
 		double right_field = 0;
 		
-
+		double[][] qLearn = new double[5][6];
+		
+		File checkFile = new File("learning.dat");		
+		FileInputStream fileIn = new FileInputStream("learning.dat");
+        ObjectInputStream objIn = new ObjectInputStream(fileIn);
+        ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream("learning.dat"));
+                
+        try {
+        	if(checkFile.exists())
+        		qLearn = (double[][]) objIn.readObject();        		
+		}
+        catch (Exception e) {
+			e.printStackTrace();
+		}
+        finally
+		{
+			objIn.close();
+	        fileIn.close();	
+		}       
+		
+		
 		while(Button.ESCAPE.isUp()) {
 
-			// --- Get webcam information
+			// Check for target
+			
+			// Check for Junction
 			checkJunction(video, frame);
 
-			getLight.fetchSample(lightSample, 0);
-
-			int i = 0;
-			while(lightSample[0]>100 && Button.ESCAPE.isUp())
-			{				
-				leftMotor.stop();
-				rightMotor.stop();
-				getLight.fetchSample(lightSample, 0);
-
-				if(checkTarget(video, frame))
-					break;
-
-				System.out.printf("%d. Bright!%n", i++);
-
-				computeMidFrame(video, frame);				
-
-				right_field = (aLightFeat.meanRight/255)*180;
-				left_field = (aLightFeat.meanLeft/255)*180;
-
-				if ((right_field - left_field) > 5)
-				{
-					System.out.printf("Right");
-					rightMotor.setSpeed(400); 
-					leftMotor.setSpeed(400); 
-					leftMotor.rotate(-100);
-					rightMotor.rotate(-250);
-				}
-				else if ((left_field - right_field) > 5)
-				{
-					System.out.printf("Left");
-					rightMotor.setSpeed(400); 
-					leftMotor.setSpeed(400);
-					rightMotor.rotate(-100);
-					leftMotor.rotate(-250);
-					
-				}
-				
-				else
-				{
-					System.out.printf("Back");
-					rightMotor.setSpeed(300); 
-					leftMotor.setSpeed(300);
-					rightMotor.rotate(-100);
-					leftMotor.rotate(-100);
-				}
-			}
-
+			
 
 			// Display
 			//System.out.println("Mean right: " + aLightFeat.meanRight);
 			//System.out.println("Mean left: " + aLightFeat.meanLeft);
 			//dispFrame();
-			computeMidFrame(video, frame);
-			right_field = ((aLightFeat.meanMidRight)/255)*180;
-			left_field = ((aLightFeat.meanMidLeft)/255)*180;
-			//System.out.printf("L: %d R:%d%n", (int)left_field, (int)right_field);
+			computeLeftRight(video, frame);
+			right_field = ((aLightFeat.meanRight)/255)*180;
+			left_field = ((aLightFeat.meanLeft)/255)*180;
+			
+			System.out.printf("L: %d R:%d%n", (int)left_field, (int)right_field);
+			
+			pilot.setTravelSpeed(100);
 			
 			// Tend left
 			//if ((left_field) < 60) {
-			if((left_field-right_field)>20)
+			if((left_field-right_field)>10)
 			{
+				System.out.printf("Left%n");
+				pilot.steer(50,10);				
 				//System.out.printf("L:%d R:%d%n",(int)left_field, (int)right_field);
-				rightMotor.setSpeed(200); 
-				leftMotor.setSpeed(150);
+				/*rightMotor.setSpeed(200); 
+				leftMotor.setSpeed(150);*/
 				//right_field = right_field * mot_amplif_larger;
 				//left_field = left_field * mot_amplif_smaller;
 			}
 			
 			// Tend right
 			//else if ((left_field-right_field) > 20 || right_field > 70 )
-			else if((right_field-left_field)>20)
+			else if((right_field-left_field)>10)
 			{
-				//System.out.printf("L:%d R:%d%n",(int)left_field, (int)right_field);
+				System.out.printf("Right%n");
+				pilot.steer(-50,-10);
+				
+				/*//System.out.printf("L:%d R:%d%n",(int)left_field, (int)right_field);
 				rightMotor.setSpeed(150); 
 				leftMotor.setSpeed(200);
 				//left_field = right_field * mot_amplif_larger;
 				//right_field = left_field * mot_amplif_smaller;
-			}
+*/			}
 
 			// Go straight
 			else
 			{
 				//System.out.printf("L:%d R:%d%n",(int)left_field, (int)right_field);
-				rightMotor.setSpeed(150); 
-				leftMotor.setSpeed(150);
+				System.out.printf("Straight%n");
+				pilot.steer(0);				
 				//left_field = right_field * mot_amplif_smaller;
 				//right_field = left_field;
 			}
 
 
 			float maxSpeed = 6;//rightMotor.getMaxSpeed();
-			rightMotor.forward();
-			leftMotor.forward();
+			//rightMotor.forward();
+			//leftMotor.forward();
 			//System.out.printf("Spd:%d  Spd:%d%n",(int)(right_field)*(int)(maxSpeed), (int)(left_field)*(int)(maxSpeed));
 			//rightMotor.setSpeed((int)(left_field)*(int)(maxSpeed)); 
 			//leftMotor.setSpeed((int)(right_field)*(int)(maxSpeed)); 
-
+			
+				
+			
+	        try {			
+				objOut.writeObject(qLearn);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}		  
 		}
 		video.close();
+		objOut.close();
 		lightSensor.close();
 		leftMotor.close();
 		rightMotor.close();		
@@ -203,7 +228,7 @@ public class LineFollower {
 	{
 		if((aLightFeat.meanTopLeft + aLightFeat.meanTopRight) > 100)
 		{
-			rightMotor.stop(); 
+			rightMotor.stop();
 			leftMotor.stop();
 			rightMotor.rotate(360);
 			return true;
@@ -211,65 +236,58 @@ public class LineFollower {
 		return false;
 		
 	}
-	static boolean checkTarget(Video video, byte[] frame) throws IOException
-	{
-		computeMidFrame(video, frame);
+	static boolean checkTarget()
+	{		
+		lightSampleProv.fetchSample(lightSample, 0);
 		
-		double right_field = (aLightFeat.meanRight/255)*180;
-		double left_field = (aLightFeat.meanLeft/255)*180;
-		double frame1 = right_field + left_field;
-
-		Delay.msDelay(1000);
-
-		computeMidFrame(video, frame);
-
-		right_field = (aLightFeat.meanRight/255)*180;
-		left_field = (aLightFeat.meanLeft/255)*180;
-
-		double result = right_field + left_field - frame1;
-		System.out.printf("L: %d R:%d%n", (int)left_field, (int)right_field);
-		System.out.printf("Wall %d%n", (int)Math.abs(result));
-
-		if(Math.abs(result) < 0.0001)
-		{
-			System.out.printf("Wall %d%n", (int)result);
-			rightMotor.setSpeed(300); 
-			leftMotor.setSpeed(300);
-			rightMotor.rotate(720);
-			rightMotor.forward();
-			leftMotor.forward();
-			Delay.msDelay(1000);
+		if(lightSample[0] >= 0.25 && lightSample[0] <= 0.31)
 			return true;
-		}
-		
-		return false;
+		else
+			return false;
 	}
 	
 	static void checkJunction(Video video, byte[] frame) throws IOException
 	{
 		computeQuarter(video, frame);
 
-		double top_right = (aLightFeat.meanTopRight/255)*180;
-		double top_left = (aLightFeat.meanTopLeft/255)*180;
-		double btm_right = (aLightFeat.meanBtmRight/255)*180;
-		double btm_left = (aLightFeat.meanBtmLeft/255)*180;
-		double top_field = top_left + top_right;
+		double left = (aLightFeat.mean3Left/255)*180;
+		double mid = (aLightFeat.mean3Mid/255)*180;
+		double right = (aLightFeat.mean3Right/255)*180;
 
-		System.out.printf("TL: %d TR:%d%n", (int)top_left, (int)top_right);
-		System.out.printf("BL: %d BR:%d%n%n", (int)btm_left, (int)btm_right);
+		System.out.printf("3L: %d 3M: %d 3R:%d%n", (int)left, (int)mid, (int)right);
 		
-		if(top_field<70)
-			rightMotor.rotate(360);
-		
-		if((top_right-btm_right)>90)
+		/*if(top_field<70)
+			pilot.steer(100);
+			//rightMotor.rotate(360);
+*/		
+		if(left>80)
 		{
-			leftMotor.stop();
+			System.out.printf("Right Junction%n");
+			pilot.steer(-100,-90);			
+			/*leftMotor.stop();
 			rightMotor.stop();
-			leftMotor.rotate(360);
+			leftMotor.rotate(360);*/
 		}
-
+		
+		else if(right>80)
+		{
+			System.out.printf("Left Junction%n");
+			pilot.steer(100,90);			
+		}
 	}
 
+	static void computeLeftRight(Video video, byte[] frame) throws IOException
+	{
+		// Grab frame
+		video.grabFrame(frame);
+
+		// Extract luminanceFrame
+		extractLuminanceValues(frame);
+
+		// Compute light features
+		aLightFeat.compLeftRight(luminanceFrame, HEIGHT, WIDTH);
+	}
+	
 	static void computeMidFrame(Video video, byte[] frame) throws IOException
 	{
 		// Grab frame
