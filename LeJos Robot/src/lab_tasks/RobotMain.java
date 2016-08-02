@@ -10,17 +10,7 @@ import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.robotics.RegulatedMotor;
 
 public class RobotMain {
-	
-	/** The EV3 brick we're controlling */
-    //private static EV3 brick = LocalEV3.get();;
-    
-    /** The motor on the left side of the robot */
-    //static RegulatedMotor leftMotor = new EV3LargeRegulatedMotor(brick.getPort("B"));
-
-    /** The motor on the right side of the robot */
-   //static RegulatedMotor rightMotor = new EV3LargeRegulatedMotor(brick.getPort("C"));
-    
-	
+		
 	//Constructor
     public RobotMain() {
 

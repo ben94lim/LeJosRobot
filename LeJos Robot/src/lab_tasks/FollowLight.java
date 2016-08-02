@@ -61,19 +61,7 @@ public class FollowLight {
 	public FollowLight() {
 
 		// permanently store the brick in our instance variable
-		brick = (EV3) BrickFinder.getLocal();;
-
-		/*// Establish a fail-safe: pressing Escape quits
-    	brick.getKey("Escape").addKeyListener(new KeyListener() {
-    		@Override
-    		public void keyPressed(Key k) {
-    		}
-
-    		@Override
-    		public void keyReleased(Key k) {
-    			System.exit(0);
-    		}
-    	});*/
+		brick = (EV3) BrickFinder.getLocal();
 
 		// Initialize luminance frame
 		for (int x=0; x<WIDTH; x += 1) {
@@ -155,11 +143,6 @@ public class FollowLight {
 			//System.out.println("Mean right: " + aLightFeat.meanRight);
 			//System.out.println("Mean left: " + aLightFeat.meanLeft);
 			//dispFrame();
-
-			// Regulated motors
-			//motorB.rotate((int) (mot_amplif*(aLightFeat.meanRight/255)*180), true); // true is for immediate return -> to parallelize motors
-			//motorC.rotate((int) (mot_amplif*(aLightFeat.meanLeft/255)*180));
-			// Unregulated motors
 
 			right_field = (aLightFeat.meanRight/255)*180;
 			left_field = (aLightFeat.meanLeft/255)*180;

@@ -50,9 +50,6 @@ public class AvoidObstacles implements RoboFace {
 
     	super();
 
-    	// permanently store the brick in our instance variable
-    	//brick = pBrick;
-                
     	// Establish a fail-safe: pressing Escape quits
     	Robot.brick.getKey("Escape").addKeyListener(new KeyListener() {
     		@Override
@@ -64,26 +61,8 @@ public class AvoidObstacles implements RoboFace {
     			System.exit(0);
     		}
     	});
-
-    	// Connect the motors
-    	//leftMotor = lPort;
-    	//rightMotor = rPort;
-    	
-    	//Connect Ultrasonic Sensor
-    	
-    	
-    	// Set Ultrasonic Sensor to Distance Mode
-    	//sonar = new RangeFinderAdapter(sonicSensor);   	
-
-
     	 	
     }
-    
-    // get an instance of this sensor in measurement mode
-	//SampleProvider distance = sonicSensor.getMode("Distance");   
-    
-	// initialize an array of floats for fetching samples. 
-	// Ask the SampleProvider how long the array should be
 	float[] sample = new float[distance.sampleSize()];
     
     void move()
@@ -114,11 +93,11 @@ public class AvoidObstacles implements RoboFace {
 	public void action() throws IOException {
 		active = true;
 		
-		/*distance.fetchSample(sample, 0);
+		distance.fetchSample(sample, 0);
 		if(sample[0] > 0.2)
 			move();
 		else
-			avoid();*/
+			avoid();
 		
 		active = false;
 	}
@@ -126,7 +105,7 @@ public class AvoidObstacles implements RoboFace {
 	@Override
 	public boolean takeControl() {
 		distance.fetchSample(sample, 0);
-		//System.out.printf("Distance: %d\n", (int)sample[0]);
+
 		if(sample[0] < 0.2)
 			return false;
 		else 

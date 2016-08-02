@@ -57,9 +57,6 @@ public class FollowMotion implements RoboFace{
     public FollowMotion(RoboFace avoidBehaviour) {
 
     	super();
-
-    	// permanently store the brick in our instance variable
-    	//brick = pBrick;
                 
     	// Establish a fail-safe: pressing Escape quits
     	Robot.brick.getKey("Escape").addKeyListener(new KeyListener() {
@@ -72,46 +69,16 @@ public class FollowMotion implements RoboFace{
     			System.exit(0);
     		}  		
     	});
-
-    	// Connect the motors
-    	/** The motor on the left side of the robot */
-    	//leftMotor = lPort;
-
-	    /** The motor on the right side of the robot */
-	    //rightMotor = rPort;
-    	
-    	
     	
     	avoid = avoidBehaviour;
     }
-    
-    private void intro() {
-    	// Clear the screen
-    	brick.getTextLCD().clear();
 
-    	brick.getTextLCD().drawString("Calibrate:", 0, 0);
-    	brick.getTextLCD().drawString("Place the robot", 0, 1);
-    	brick.getTextLCD().drawString("on or near the", 0, 2);
-    	brick.getTextLCD().drawString("line start.", 0, 3);
-    	brick.getTextLCD().drawString("Then press the", 0, 5);
-    	brick.getTextLCD().drawString("Enter key", 0, 6);
-
-    	brick.getKey("Enter").waitForPressAndRelease();
-    }
-    
     void go() throws IOException {
-    	
-    	// Displays introduction
-    	//intro();
     	
     	// While not suppressed, chase movement
 
     	chase();
     	
-    	// Close motor ports and webcam port
-    	//webcam.close();
-    	//Robot.leftMotor.stop();
-    	//Robot.rightMotor.stop();
     }
     
     private void chase() throws IOException {
@@ -164,10 +131,7 @@ public class FollowMotion implements RoboFace{
     		{
     			Robot.leftMotor.setSpeed(baseSpeed+50);
     			Robot.rightMotor.setSpeed(baseSpeed);
-    			//Delay.msDelay(2000);
     		}
-    		
-    		// System.out.println("Max motion: " + aMotMap.compMaxMotion());
     		
     		// Display left and right motion values and motor speed
     		System.out.printf("L:%d R:%d LM:%d RM:%d %n",(int)aMotMap.leftMotion, (int)aMotMap.rightMotion, (int)Robot.leftMotor.getSpeed(), (int)Robot.rightMotor.getSpeed());
